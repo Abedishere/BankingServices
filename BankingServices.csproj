@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <!-- Target .NET 8; EF Core 7 runs perfectly on .NET 8 -->
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- EF Core 7 stable packages -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.11">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="7.0.11">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+
+    <!-- PostgreSQL provider for EF Core 7 -->
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.11" />
+
+    <!-- OData for ASP.NET Core -->
+    <PackageReference Include="Microsoft.AspNetCore.OData" Version="8.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.OData.Radzen" Version="1.0.12" />
+
+    <!-- MassTransit & RabbitMQ -->
+    <PackageReference Include="MassTransit" Version="8.3.8-develop.2235" />
+    <PackageReference Include="MassTransit.RabbitMQ" Version="8.3.7" />
+
+    <!-- Logging & Swagger -->
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+
+    <!-- Remove or update any additional packages that might target EF Core 8 -->
+    <!-- For example, if you have YugabyteDB support built for EF Core 8, remove it until a 7.x version is available -->
+  </ItemGroup>
+
+</Project>
