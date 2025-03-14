@@ -2,6 +2,7 @@ using BankingServices.Configurations;
 using BankingServices.Data;
 using BankingServices.Events;
 using BankingServices.Services;
+using BankingServices.UnitOfWork;
 using MassTransit;
 using MediatR;
 using Microsoft.AspNetCore.OData;
@@ -26,9 +27,11 @@ builder.Services.AddScoped<ILoggingService, LoggingService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IEventService, EventService>();
 
-// Register MediatR (scans the current assembly using a type from your project)
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<DomainEventNotification>());
+// Register Unit of Work
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
+// Register MediatR using new syntax for MediatR 12
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<DomainEventNotification>());
 
 // Register your domain event handler (optional if assembly scanning is sufficient)
 builder.Services.AddTransient<INotificationHandler<DomainEventNotification>, DomainEventHandler>();
@@ -42,8 +45,9 @@ if (builder.Configuration.GetValue<bool>("RabbitMQ:Enabled", false))
         {
             cfg.Host(builder.Configuration["RabbitMQ:Host"], h =>
             {
-                h.Username(builder.Configuration["RabbitMQ:guest"]);
-                h.Password(builder.Configuration["RabbitMQ:guest"]);
+                // Use the default credentials ("guest" for both username and password)
+                h.Username("guest");
+                h.Password("guest");
             });
         });
     });
@@ -90,10 +94,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-// Use Authorization middleware if you have secured endpoints
 app.UseAuthorization();
-
 app.UseRouting();
 
 // 9. Initialize the Database (with robust error handling)
@@ -104,13 +105,10 @@ try
         var services = scope.ServiceProvider;
         var context = services.GetRequiredService<BankingDbContext>();
 
-        // Check DB connection
         if (context.Database.CanConnect())
         {
-            // Create or migrate the database
             context.Database.EnsureCreated();
 
-            // Optional seeding if no transaction logs exist
             if (!context.TransactionLogs.Any())
             {
                 context.TransactionLogs.Add(new BankingServices.Models.TransactionLog
@@ -130,7 +128,6 @@ try
 catch (Exception ex)
 {
     Console.WriteLine($"Database initialization error: {ex.Message}");
-    // Continue startup even if DB initialization fails
 }
 
 // 10. Map Controllers

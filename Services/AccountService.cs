@@ -1,6 +1,7 @@
 using BankingServices.Data;
 using BankingServices.Models;
 using BankingServices.Models.DTOs;
+using BankingServices.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
 
 namespace BankingServices.Services
@@ -9,11 +10,13 @@ namespace BankingServices.Services
     {
         private readonly BankingDbContext _context;
         private readonly ILogger<AccountService> _logger;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public AccountService(BankingDbContext context, ILogger<AccountService> logger)
+        public AccountService(BankingDbContext context, ILogger<AccountService> logger, IUnitOfWork unitOfWork)
         {
             _context = context;
             _logger = logger;
+            _unitOfWork = unitOfWork;
         }
 
         public async Task<List<CommonTransactionResponse>> GetCommonTransactionsAsync(List<long> accountIds)
@@ -29,7 +32,7 @@ namespace BankingServices.Services
                 var transactionsByAmountAndType = await _context.TransactionLogs
                     .Where(t => accountIds.Contains(t.AccountId))
                     .GroupBy(t => new { t.Amount, t.TransactionType })
-                    .Where(g => g.Select(t => t.AccountId).Distinct().Count() > 1) // Ensure transactions come from different accounts
+                    .Where(g => g.Select(t => t.AccountId).Distinct().Count() > 1)
                     .ToListAsync();
 
                 var result = new List<CommonTransactionResponse>();
@@ -39,13 +42,10 @@ namespace BankingServices.Services
                     var transactions = group.ToList();
                     var uniqueAccountIds = transactions.Select(t => t.AccountId).Distinct().ToList();
 
-                    // Only include if at least 2 of the requested accounts have this transaction pattern
                     if (uniqueAccountIds.Count >= 2)
                     {
-                        // For each transaction in this group
                         foreach (var transaction in transactions)
                         {
-                            // Check if we already added this transaction
                             if (!result.Any(r => r.TransactionId == transaction.Id))
                             {
                                 result.Add(new CommonTransactionResponse
@@ -74,7 +74,6 @@ namespace BankingServices.Services
         {
             try
             {
-                // Get all accounts for the user
                 var accounts = await _context.Accounts
                     .Where(a => a.UserId == userId)
                     .ToListAsync();
@@ -92,8 +91,6 @@ namespace BankingServices.Services
                 }
 
                 var accountIds = accounts.Select(a => a.Id).ToList();
-
-                // Get all transactions for these accounts
                 var transactions = await _context.TransactionLogs
                     .Where(t => accountIds.Contains(t.AccountId))
                     .ToListAsync();
@@ -105,15 +102,14 @@ namespace BankingServices.Services
                     Accounts = new List<AccountSummary>()
                 };
 
-                // Calculate totals for each account
                 foreach (var account in accounts)
                 {
                     var accountTransactions = transactions.Where(t => t.AccountId == account.Id).ToList();
-                    
+
                     var deposits = accountTransactions
                         .Where(t => t.TransactionType == "Deposit" && t.Status == "Completed")
                         .Sum(t => t.Amount);
-                    
+
                     var withdrawals = accountTransactions
                         .Where(t => t.TransactionType == "Withdrawal" && t.Status == "Completed")
                         .Sum(t => t.Amount);
@@ -140,6 +136,55 @@ namespace BankingServices.Services
             {
                 _logger.LogError(ex, "Error retrieving account balance summary for user ID: {UserId}", userId);
                 throw;
+            }
+        }
+
+        public async Task<bool> TransferFundsAsync(long fromAccountId, long toAccountId, decimal amount)
+        {
+            if (amount <= 0)
+                throw new ArgumentException("Amount must be greater than zero.", nameof(amount));
+
+            await _unitOfWork.BeginTransactionAsync();
+            try
+            {
+                var fromAccount = await _unitOfWork.AccountRepository.GetAccountByIdAsync(fromAccountId);
+                var toAccount = await _unitOfWork.AccountRepository.GetAccountByIdAsync(toAccountId);
+
+                if (fromAccount == null || toAccount == null)
+                    throw new Exception("One or both accounts not found.");
+
+                if (fromAccount.CurrentBalance < amount)
+                    throw new Exception("Insufficient funds.");
+
+                // Deduct funds from the source account
+                fromAccount.CurrentBalance -= amount;
+                _unitOfWork.AccountRepository.Update(fromAccount);
+
+                // Add funds to the destination account
+                toAccount.CurrentBalance += amount;
+                _unitOfWork.AccountRepository.Update(toAccount);
+
+                // Log the transfer as a transaction
+                var transactionLog = new TransactionLog
+                {
+                    AccountId = fromAccountId,
+                    TransactionType = "Transfer",
+                    Amount = amount,
+                    Timestamp = DateTime.UtcNow,
+                    Status = "Completed",
+                    Details = $"Transferred {amount} from account {fromAccountId} to account {toAccountId}"
+                };
+
+                await _unitOfWork.TransactionRepository.AddTransactionAsync(transactionLog);
+
+                await _unitOfWork.CommitAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackAsync();
+                _logger.LogError(ex, "Error during fund transfer from {FromAccountId} to {ToAccountId}", fromAccountId, toAccountId);
+                return false;
             }
         }
     }
