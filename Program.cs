@@ -21,6 +21,7 @@ ODataConfig.ConfigureOData(builder.Services);
 
 // 4. Register Services (DI)
 builder.Services.AddScoped<ILoggingService, LoggingService>();
+builder.Services.AddScoped<IAccountService, AccountService>();
 
 // Conditional registration for MassTransit services
 if (builder.Configuration.GetValue<bool>("RabbitMQ:Enabled", false))
