@@ -13,6 +13,7 @@ namespace BankingServices.Data
 
         public DbSet<TransactionLog> TransactionLogs { get; set; } = null!;
         public DbSet<Account> Accounts { get; set; } = null!;
+        public DbSet<Log> Logs { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -89,6 +90,46 @@ namespace BankingServices.Data
 
                 // PostgreSQL-specific table name
                 entity.ToTable("accounts");
+            });
+            
+            // Configure Log entity
+            modelBuilder.Entity<Log>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                
+                entity.Property(e => e.Id)
+                    .UseIdentityByDefaultColumn()
+                    .HasColumnName("id");
+                    
+                entity.Property(e => e.RequestId)
+                    .IsRequired()
+                    .HasColumnName("request_id");
+                    
+                entity.Property(e => e.RequestObject)
+                    .IsRequired()
+                    .HasColumnName("request_object")
+                    .HasColumnType("jsonb");
+                    
+                entity.Property(e => e.RouteURL)
+                    .IsRequired()
+                    .HasColumnName("route_url");
+                    
+                entity.Property(e => e.Timestamp)
+                    .IsRequired()
+                    .HasColumnName("timestamp");
+                    
+                // Create indexes for performance optimization
+                entity.HasIndex(e => e.RequestId)
+                    .HasDatabaseName("idx_logs_request_id");
+                    
+                entity.HasIndex(e => e.RouteURL)
+                    .HasDatabaseName("idx_logs_route_url");
+                    
+                entity.HasIndex(e => e.Timestamp)
+                    .HasDatabaseName("idx_logs_timestamp");
+                    
+                // PostgreSQL-specific table name
+                entity.ToTable("logs");
             });
         }
     }

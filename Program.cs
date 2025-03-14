@@ -45,34 +45,36 @@ if (builder.Configuration.GetValue<bool>("RabbitMQ:Enabled", false))
 else
 {
     // Register services without MassTransit dependencies
-    builder.Services.AddScoped<ITransactionLogService>(sp => 
+    builder.Services.AddScoped<ITransactionLogService>(sp =>
         new TransactionLogService(
             sp.GetRequiredService<BankingDbContext>(),
             sp.GetRequiredService<ILogger<TransactionLogService>>()));
     
-    builder.Services.AddScoped<IRabbitMQService>(sp => 
+    builder.Services.AddScoped<IRabbitMQService>(sp =>
         new RabbitMQService(
             sp.GetRequiredService<ILogger<RabbitMQService>>()));
 }
 
-// 6. Add Controllers
+// 5. Add Controllers
 builder.Services.AddControllers();
 
-// 7. Configure Swagger
+// 6. Configure Swagger/OpenAPI
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { 
         Title = "Banking Services API", 
         Version = "v1",
-        Description = "API for managing banking transaction logs"
+        Description = "API for managing banking transaction logs and account data"
     });
 });
 
-// 8. Build the app
+// 7. (Optional) Add Authorization Middleware if needed
+builder.Services.AddAuthorization();
+
 var app = builder.Build();
 
-// 9. Configure pipeline before attempting database initialization
+// 8. Configure HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -80,9 +82,13 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// (Optional) Use Authorization middleware if you have secured endpoints
+app.UseAuthorization();
+
 app.UseRouting();
 
-// 10. Initialize the Database (with robust error handling)
+// 9. Initialize the Database (with robust error handling)
 try
 {
     // Create a new scope to resolve services
@@ -93,34 +99,39 @@ try
         {
             var context = services.GetRequiredService<BankingDbContext>();
             
-            // Test the connection before trying to initialize
-            context.Database.CanConnect();
-            
-            // Skip migration for now, just use EnsureCreated
-            context.Database.EnsureCreated();
-            
-            // Only seed data if the database was created successfully
-            if (context.Database.IsRelational())
+            // Test the connection before initializing
+            if (context.Database.CanConnect())
+            {
+                // Use EnsureCreated for simplicity (or replace with context.Database.Migrate() if needed)
+                context.Database.EnsureCreated();
+
+                // Seed data only if needed
+                if (context.Database.IsRelational())
+                {
+                    var logger = services.GetRequiredService<ILogger<Program>>();
+                    logger.LogInformation("Seeding the database...");
+
+                    if (!context.TransactionLogs.Any())
+                    {
+                        context.TransactionLogs.Add(new BankingServices.Models.TransactionLog
+                        {
+                            AccountId = 1,
+                            TransactionType = "Deposit",
+                            Amount = 1000.00m,
+                            Timestamp = DateTime.UtcNow,
+                            Status = "Completed",
+                            Details = "Initial seed transaction"
+                        });
+                        context.SaveChanges();
+                    }
+                    
+                    logger.LogInformation("Database initialized successfully.");
+                }
+            }
+            else
             {
                 var logger = services.GetRequiredService<ILogger<Program>>();
-                logger.LogInformation("Seeding the database...");
-                
-                // Seed initial data
-                if (!context.TransactionLogs.Any())
-                {
-                    context.TransactionLogs.Add(new BankingServices.Models.TransactionLog
-                    {
-                        AccountId = 1,
-                        TransactionType = "Deposit",
-                        Amount = 1000.00m,
-                        Timestamp = DateTime.UtcNow,
-                        Status = "Completed",
-                        Details = "Initial seed transaction"
-                    });
-                    context.SaveChanges();
-                }
-                
-                logger.LogInformation("Database initialized successfully.");
+                logger.LogError("Unable to connect to the database.");
             }
         }
         catch (Exception ex)
@@ -138,6 +149,8 @@ catch (Exception ex)
     // Continue with app startup even if there's an error
 }
 
-// 11. Map controllers and run the app
+// 10. Map Controllers
 app.MapControllers();
+
+// 11. Run the app
 app.Run();
