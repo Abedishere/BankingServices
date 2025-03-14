@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <!-- EF Core 7 stable packages -->
+    <PackageReference Include="Database.Initialization" Version="1.0.21" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.11" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.11">
       <PrivateAssets>all</PrivateAssets>
@@ -27,6 +28,9 @@
     <!-- MassTransit & RabbitMQ -->
     <PackageReference Include="MassTransit" Version="8.3.8-develop.2235" />
     <PackageReference Include="MassTransit.RabbitMQ" Version="8.3.7" />
+
+    <!-- Add Newtonsoft.Json dependency -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 
     <!-- Logging & Swagger -->
     <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />

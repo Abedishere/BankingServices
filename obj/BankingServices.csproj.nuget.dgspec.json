@@ -45,6 +45,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "Database.Initialization": {
+              "target": "Package",
+              "version": "[1.0.21, )"
+            },
             "MassTransit": {
               "target": "Package",
               "version": "[8.3.8-develop.2235, )"
@@ -74,6 +78,10 @@
               "suppressParent": "All",
               "target": "Package",
               "version": "[7.0.11, )"
+            },
+            "Newtonsoft.Json": {
+              "target": "Package",
+              "version": "[13.0.3, )"
             },
             "Npgsql.EntityFrameworkCore.PostgreSQL": {
               "target": "Package",
