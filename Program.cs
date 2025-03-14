@@ -1,7 +1,9 @@
 using BankingServices.Configurations;
 using BankingServices.Data;
+using BankingServices.Events;
 using BankingServices.Services;
 using MassTransit;
+using MediatR;
 using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
@@ -22,19 +24,26 @@ ODataConfig.ConfigureOData(builder.Services);
 // 4. Register Services (DI)
 builder.Services.AddScoped<ILoggingService, LoggingService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
+builder.Services.AddScoped<IEventService, EventService>();
+
+// Register MediatR (scans the current assembly using a type from your project)
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<DomainEventNotification>());
+
+
+// Register your domain event handler (optional if assembly scanning is sufficient)
+builder.Services.AddTransient<INotificationHandler<DomainEventNotification>, DomainEventHandler>();
 
 // Conditional registration for MassTransit services
 if (builder.Configuration.GetValue<bool>("RabbitMQ:Enabled", false))
 {
-    // Configure MassTransit / RabbitMQ
     builder.Services.AddMassTransit(config =>
     {
         config.UsingRabbitMq((context, cfg) =>
         {
             cfg.Host(builder.Configuration["RabbitMQ:Host"], h =>
             {
-                h.Username(builder.Configuration["RabbitMQ:Username"]);
-                h.Password(builder.Configuration["RabbitMQ:Password"]);
+                h.Username(builder.Configuration["RabbitMQ:guest"]);
+                h.Password(builder.Configuration["RabbitMQ:guest"]);
             });
         });
     });
@@ -44,7 +53,6 @@ if (builder.Configuration.GetValue<bool>("RabbitMQ:Enabled", false))
 }
 else
 {
-    // Register services without MassTransit dependencies
     builder.Services.AddScoped<ITransactionLogService>(sp =>
         new TransactionLogService(
             sp.GetRequiredService<BankingDbContext>(),
@@ -65,7 +73,7 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo { 
         Title = "Banking Services API", 
         Version = "v1",
-        Description = "API for managing banking transaction logs and account data"
+        Description = "API for managing banking transaction logs, account data, and domain events"
     });
 });
 
@@ -83,7 +91,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// (Optional) Use Authorization middleware if you have secured endpoints
+// Use Authorization middleware if you have secured endpoints
 app.UseAuthorization();
 
 app.UseRouting();
@@ -91,66 +99,42 @@ app.UseRouting();
 // 9. Initialize the Database (with robust error handling)
 try
 {
-    // Create a new scope to resolve services
     using (var scope = app.Services.CreateScope())
     {
         var services = scope.ServiceProvider;
-        try
-        {
-            var context = services.GetRequiredService<BankingDbContext>();
-            
-            // Test the connection before initializing
-            if (context.Database.CanConnect())
-            {
-                // Use EnsureCreated for simplicity (or replace with context.Database.Migrate() if needed)
-                context.Database.EnsureCreated();
+        var context = services.GetRequiredService<BankingDbContext>();
 
-                // Seed data only if needed
-                if (context.Database.IsRelational())
+        // Check DB connection
+        if (context.Database.CanConnect())
+        {
+            // Create or migrate the database
+            context.Database.EnsureCreated();
+
+            // Optional seeding if no transaction logs exist
+            if (!context.TransactionLogs.Any())
+            {
+                context.TransactionLogs.Add(new BankingServices.Models.TransactionLog
                 {
-                    var logger = services.GetRequiredService<ILogger<Program>>();
-                    logger.LogInformation("Seeding the database...");
-
-                    if (!context.TransactionLogs.Any())
-                    {
-                        context.TransactionLogs.Add(new BankingServices.Models.TransactionLog
-                        {
-                            AccountId = 1,
-                            TransactionType = "Deposit",
-                            Amount = 1000.00m,
-                            Timestamp = DateTime.UtcNow,
-                            Status = "Completed",
-                            Details = "Initial seed transaction"
-                        });
-                        context.SaveChanges();
-                    }
-                    
-                    logger.LogInformation("Database initialized successfully.");
-                }
+                    AccountId = 1,
+                    TransactionType = "Deposit",
+                    Amount = 1000.00m,
+                    Timestamp = DateTime.UtcNow,
+                    Status = "Completed",
+                    Details = "Initial seed transaction"
+                });
+                context.SaveChanges();
             }
-            else
-            {
-                var logger = services.GetRequiredService<ILogger<Program>>();
-                logger.LogError("Unable to connect to the database.");
-            }
-        }
-        catch (Exception ex)
-        {
-            var logger = services.GetRequiredService<ILogger<Program>>();
-            logger.LogError(ex, "An error occurred while initializing the database.");
-            // Continue with app startup even if DB initialization fails
         }
     }
 }
 catch (Exception ex)
 {
-    // Log the exception at the application level
-    Console.WriteLine($"Application startup error: {ex.Message}");
-    // Continue with app startup even if there's an error
+    Console.WriteLine($"Database initialization error: {ex.Message}");
+    // Continue startup even if DB initialization fails
 }
 
 // 10. Map Controllers
 app.MapControllers();
 
-// 11. Run the app
+// 11. Run
 app.Run();

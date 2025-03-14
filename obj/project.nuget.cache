@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "IPkdat5kKe4=",
+  "dgSpecHash": "B+ug/N/cW+4=",
   "success": true,
   "projectFilePath": "C:\\Users\\Abed Al-Rahman\\RiderProjects\\BankingServices\\BankingServices.csproj",
   "expectedPackageFiles": [
@@ -10,6 +10,9 @@
     "C:\\Users\\Abed Al-Rahman\\.nuget\\packages\\masstransit\\8.3.8-develop.2235\\masstransit.8.3.8-develop.2235.nupkg.sha512",
     "C:\\Users\\Abed Al-Rahman\\.nuget\\packages\\masstransit.abstractions\\8.3.8-develop.2235\\masstransit.abstractions.8.3.8-develop.2235.nupkg.sha512",
     "C:\\Users\\Abed Al-Rahman\\.nuget\\packages\\masstransit.rabbitmq\\8.3.7\\masstransit.rabbitmq.8.3.7.nupkg.sha512",
+    "C:\\Users\\Abed Al-Rahman\\.nuget\\packages\\mediatr\\12.4.1\\mediatr.12.4.1.nupkg.sha512",
+    "C:\\Users\\Abed Al-Rahman\\.nuget\\packages\\mediatr.contracts\\2.0.1\\mediatr.contracts.2.0.1.nupkg.sha512",
+    "C:\\Users\\Abed Al-Rahman\\.nuget\\packages\\mediatr.extensions.microsoft.dependencyinjection\\11.1.0\\mediatr.extensions.microsoft.dependencyinjection.11.1.0.nupkg.sha512",
     "C:\\Users\\Abed Al-Rahman\\.nuget\\packages\\microsoft.aspnetcore.authorization\\1.1.1\\microsoft.aspnetcore.authorization.1.1.1.nupkg.sha512",
     "C:\\Users\\Abed Al-Rahman\\.nuget\\packages\\microsoft.aspnetcore.hosting.abstractions\\1.1.1\\microsoft.aspnetcore.hosting.abstractions.1.1.1.nupkg.sha512",
     "C:\\Users\\Abed Al-Rahman\\.nuget\\packages\\microsoft.aspnetcore.hosting.server.abstractions\\1.1.1\\microsoft.aspnetcore.hosting.server.abstractions.1.1.1.nupkg.sha512",
@@ -226,5 +229,16 @@
     "C:\\Users\\Abed Al-Rahman\\.nuget\\packages\\system.xml.xpath\\4.0.1\\system.xml.xpath.4.0.1.nupkg.sha512",
     "C:\\Users\\Abed Al-Rahman\\.nuget\\packages\\system.xml.xpath.xdocument\\4.0.1\\system.xml.xpath.xdocument.4.0.1.nupkg.sha512"
   ],
-  "logs": []
+  "logs": [
+    {
+      "code": "NU1608",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "Detected package version outside of dependency constraint: MediatR.Extensions.Microsoft.DependencyInjection 11.1.0 requires MediatR (>= 11.0.0 && < 12.0.0) but version MediatR 12.4.1 was resolved.",
+      "libraryId": "MediatR",
+      "targetGraphs": [
+        "net8.0"
+      ]
+    }
+  ]
 }
