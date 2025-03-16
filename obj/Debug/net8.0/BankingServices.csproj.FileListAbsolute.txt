@@ -105,3 +105,11 @@ C:\Users\Abed Al-Rahman\RiderProjects\BankingServices\bin\Debug\net8.0\runtimes\
 C:\Users\Abed Al-Rahman\RiderProjects\BankingServices\bin\Debug\net8.0\MediatR.dll
 C:\Users\Abed Al-Rahman\RiderProjects\BankingServices\bin\Debug\net8.0\MediatR.Contracts.dll
 C:\Users\Abed Al-Rahman\RiderProjects\BankingServices\bin\Debug\net8.0\MediatR.Extensions.Microsoft.DependencyInjection.dll
+C:\Users\Abed Al-Rahman\RiderProjects\BankingServices\bin\Debug\net8.0\Castle.Core.dll
+C:\Users\Abed Al-Rahman\RiderProjects\BankingServices\bin\Debug\net8.0\FluentAssertions.dll
+C:\Users\Abed Al-Rahman\RiderProjects\BankingServices\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.InMemory.dll
+C:\Users\Abed Al-Rahman\RiderProjects\BankingServices\bin\Debug\net8.0\Moq.dll
+C:\Users\Abed Al-Rahman\RiderProjects\BankingServices\bin\Debug\net8.0\xunit.abstractions.dll
+C:\Users\Abed Al-Rahman\RiderProjects\BankingServices\bin\Debug\net8.0\xunit.assert.dll
+C:\Users\Abed Al-Rahman\RiderProjects\BankingServices\bin\Debug\net8.0\xunit.core.dll
+C:\Users\Abed Al-Rahman\RiderProjects\BankingServices\bin\Debug\net8.0\xunit.execution.dotnet.dll

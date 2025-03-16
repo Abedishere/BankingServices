@@ -31,7 +31,8 @@ builder.Services.AddScoped<IEventService, EventService>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Register MediatR using new syntax for MediatR 12
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<DomainEventNotification>());
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining(typeof(DomainEventNotification)));
+
 
 // Register your domain event handler (optional if assembly scanning is sufficient)
 builder.Services.AddTransient<INotificationHandler<DomainEventNotification>, DomainEventHandler>();
